@@ -1,7 +1,5 @@
 module vhtml5
 
-import vperf_core
-
 fn test_parse_document_title_text_and_attrs() {
 	doc := parse_document('<!doctype html><main id="app" data-ready><h1>Hello</h1><p>A &amp; B</p><img src="x.png"></main>') or {
 		panic(err.msg())
@@ -33,7 +31,7 @@ fn test_emit_v_source_uses_neutral_module() {
 }
 
 fn test_profiled_compile_reports_budget() {
-	result := compile_to_v_profiled('<main>Hello</main>', VEmitOptions{}, vperf_core.CompilerBudget{
+	result := compile_to_v_profiled('<main>Hello</main>', VEmitOptions{}, CompilerBudget{
 		max_input_bytes: 1024
 		max_output_bytes: 8192
 	}) or { panic(err.msg()) }
