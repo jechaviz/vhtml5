@@ -1,27 +1,52 @@
 module vhtml5
 
 import strings
-import vperf_core
+pub struct CompilerBudget {
+pub:
+	max_input_bytes int
+	max_output_bytes int
+	max_items int
+}
+
+pub struct CompilerProfile {
+pub:
+	name string
+	input_bytes int
+	output_bytes int
+	items int
+	budget_ok bool
+}
 
 pub struct ProfiledVCompile {
 pub:
 	code string
-	profile vperf_core.CompilerProfile
+	profile CompilerProfile
 }
 
 pub fn compile_to_v(source string, options VEmitOptions) !string {
-	return compile_to_v_profiled(source, options, vperf_core.CompilerBudget{})!.code
+	return compile_to_v_profiled(source, options, CompilerBudget{})!.code
 }
 
-pub fn compile_to_v_profiled(source string, options VEmitOptions, budget vperf_core.CompilerBudget) !ProfiledVCompile {
-	start := vperf_core.start_profile()
+pub fn compile_to_v_profiled(source string, options VEmitOptions, budget CompilerBudget) !ProfiledVCompile {
 	doc := parse_document(source)!
 	code := emit_v(doc, options)
+	items := doc.node_count()
 	return ProfiledVCompile{
 		code: code
-		profile: vperf_core.finish_compile_profile('vhtml5.compile', start, source.len,
-			code.len, doc.node_count(), budget)
+		profile: CompilerProfile{
+			name: 'vhtml5.compile'
+			input_bytes: source.len
+			output_bytes: code.len
+			items: items
+			budget_ok: within_budget(source.len, code.len, items, budget)
+		}
 	}
+}
+
+fn within_budget(input_bytes int, output_bytes int, items int, budget CompilerBudget) bool {
+	return (budget.max_input_bytes <= 0 || input_bytes <= budget.max_input_bytes)
+		&& (budget.max_output_bytes <= 0 || output_bytes <= budget.max_output_bytes)
+		&& (budget.max_items <= 0 || items <= budget.max_items)
 }
 
 pub fn emit_v(doc Document, options VEmitOptions) string {
